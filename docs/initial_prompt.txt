@@ -1,0 +1,43 @@
+Original project prompt, 2026-10-19 (the README as first written).
+
+Mobile-friendly app for Luke to manage his TODO and DONE lists.
+
+Context: Over the past ten years or so I have adopted a rather simple system
+for managing immediate TODO's and DONE's.  I have a
+~/Dropbox/research_TODO.txt, and a ~/Dropbox/done.txt I open both
+simultaneously in vim by hotkey'ing "rdo" to a vi -p.  Then, within vim, I
+manage the text files by using "*" to denote something that needs to be done,
+"~" something that I realized doesn't need to be done, and "-" something that
+was completed.  Once something goes to "-" or "~" it gets moved to the done.txt
+list.  I have typically pinned "done" items to a date string by using my F5 key
+mapping, which inserts current time.  I usually block them off with 10, 20, or
+42 breaker characters ("-" or "=") on day changes.
+
+This system has worked well for me when I am on a laptop or desktop, since vim
+is available.  To manage multiple projects, I break the research_TODO.txt file
+into distinct sections, and I jump between them using "shift+*", which I
+keybound in vim to jump between matching blocks.
+
+This system has clearly worked well for me because I've stuck with it since
+2018.
+
+However, on mobile it leaves a lot to be desired.  I can open research_TODO.txt
+within the dropbox app, but this is annoying to edit.
+
+A mobile app with much nicer functionality for TODO lists is the apple Notes
+application.  It offers a similar rendering system, but if I understand its
+underlying structure it uses something like "[ ]" for things to be done, and
+"[x]" for done tasks.  It then auto sorts  within nested indentation levels,
+which is also nice.
+
+Over the past month and a half I experimented with just using the apple notes
+app.  I like parts of it (mobile compatibility, easy indentation levels,
+ability to click done button and get haptic feedback).   However I don't like
+that it is separate from my existing system.
+
+I think the thing I want going forward here is a standalone mobile app that is
+effectively a front-end viewer and editor for my research_TODO.txt, on mobile.  
+So, on mobile, it would let me edit this text file in a manner similar to what
+apple notes does, and it would automatically sync any updates to the dropbox
+.txt file so when I switched to a laptop or desktop, the changes would be
+there, in a format consistent with what I already use.

@@ -1,0 +1,10 @@
+// Copy this file to Config.xcconfig (which is gitignored) and fill it in.
+// 1. Create an app at https://www.dropbox.com/developers/apps
+//    (Scoped access, Full Dropbox or App folder, any name).
+// 2. Under Permissions enable files.content.read and files.content.write.
+// 3. Under OAuth 2 > Redirect URIs add:  db-<APP KEY>://oauth
+// 4. Paste the app key here.
+DROPBOX_APP_KEY = your_app_key_here
+
+// Your Apple developer team id (Xcode > Settings > Accounts), for signing.
+DEVELOPMENT_TEAM =

@@ -1,0 +1,214 @@
+PhoneList session log
+Date: 2026-10-19
+Machine: enki (remote workstation), Claude Code with Fable 5.1
+Working directory: ~/Dropbox/proj/lgb_phonelist
+
+==========================================
+PART 1: USER INPUTS, VERBATIM, IN ORDER
+
+[0]  /model   (set model to Fable 5.1)
+
+[1]  Check out README.md.  What do you think?      A side thread, if you pore
+     over research_TODO.txt and done.txt, is that while my history managing
+     these two files is not perfect, it's been (I think!) good enough to
+     enable this type of thing.  I think for the phone app we maybe don't
+     need to touch done.txt; just research_TODO.txt.   What do you think?
+
+[2]  update the README with those design constraints
+
+[3]  swipe-left for ~.  maybe indent and outdent should just get buttons in a
+     little menu scrollbar, similar to how the apple notes app does it?
+     sounds good for the re-wrapping.     ok go ahead on implementation!
+     i am off to lunch.
+
+[4]  Sanity check: what is a "dropbox app" in this context?
+
+[5]  talk me through the next steps then
+
+[6]  ok i think 1) is done... 2)  i think i just did all of 2 as well.
+     the app key is <app key>, so i think you can do 3?
+
+[7]  ah try again; i got xcode installed now
+
+[8]  ! sudo xcodebuild -license accept
+     (ran in-session; failed: "sudo: a terminal is required to read the
+     password")
+
+[9]  ok i just ran the xcode license
+
+[10] ok done.  however, a Sanity check: am i going to have to plug my phone
+     into the computer here?  this enki machine is a remote workstation.  i
+     can plug my phone on, but only to my local laptop.   that would require
+     doing a handoff (and generating an associated handoff.txt file for a
+     different LLM model to pick up the work...)
+
+[11] ok i just did 1.  how do i open PhoneList.xcodeproj?  Is that from
+     within xcode?
+
+[12] does the iOS 27.1 simulator download need to be complete?
+
+[13] ok i opened it in xcode.  what next?
+
+[14] see ~/ss.png
+     (Xcode Signing & Capabilities: "Communication with Apple failed / Your
+     team has no devices", "No profiles for 'com.lgbouma.phonelist' were
+     found"; destination was "Any iOS Device (arm64)")
+
+[15] on phone, seeing Untrusted Developer: Your device management settings
+     do not allow using apps from developer "Apple Development:
+     <email> <team id>) on this iPhone. you can allow using
+     these apps in Settings."
+
+[16] Ok nice.  Poking around on my phone, seems like it works!
+
+[17] Wait, so for this app to work long term, i have to get a paid developer
+     account?
+
+[18] Ok sounds good.  Now, see ~/ss2.png.  Most of the functionality seems
+     to work well.  However when inputting text in the UI, you can see
+     there's a vertical offset between where the cursor is, and where the
+     bullet is instantiated...
+
+[19] ok i think sync might be fine... is the cmd-R build?
+
+[20] Ok i think the   text input works.   but i can no longer see that box
+     where i could click "Done" or indent / dedent...  also it looks like
+     i'm getting new errors.   see ~/ss3.png
+     (ss3.png: Xcode console full of TUIKeyboardCandidateMultiplexer /
+     "variant selector cell index number could not be found" messages)
+
+[21] Ok this is great.  Now, final thing: i want to style  the button that
+     shows up on my phone's home screen. there's a sticker i like,
+     ~/face.png.  let's use that, appropriately cropped.
+
+[22] (sent mid-task) uhh make the background a stylish gradient?  i feel
+     like white would be better
+
+[23] Hmm.  Ok it built. i then unplugged.  am i good to close xcode?
+
+[24] write a full .TXT log of my inputs, and a summary of your actions --
+     from this chat
+
+
+==========================================
+PART 2: SUMMARY OF CLAUDE'S ACTIONS
+
+--- Assessment (inputs 1-2) ---
+* Read README.md, research_TODO.txt (449 lines) and done.txt (1.1 MB,
+  34,708 lines).  Tallied marker characters, section headers (15 x 42-char
+  "=" runs), tab-indented lines (11), done.txt date-header formats (1188
+  headers), and lingering "-"/"~" items in the TODO file.
+* Concluded: README is good motivation but not a spec; agreed done.txt
+  should be untouched, with evidence (sweeps are batch, block-level, date
+  stamped at sweep time; file is huge).
+* Appended a DESIGN CONSTRAINTS section to README.md: scope, round-trip
+  invariant, observed file format, no auto-sort, sync model, platform,
+  gesture map.  Fixed two typos.
+
+--- Implementation (input 3) ---
+* Updated README gesture map per Luke's choices (swipe-left = ~, Notes-style
+  bar for indent/outdent, rewrap on changed text).
+* Found no Xcode on enki (Command Line Tools only).  Installed xcodegen via
+  Homebrew.
+* Created a Swift package:
+    Sources/PhoneListCore  Document model (line array with stable ids),
+                           parser (headers, dividers, items, notes, blanks,
+                           hanging-indent continuation), edit ops (toggle
+                           done / won't-do, indent/outdent with subtree,
+                           setText with 80-col rewrap only on change,
+                           insert/append/delete/move), Rewrap, patch-style
+                           three-way Merge, DropboxClient (PKCE OAuth,
+                           refresh, download, rev-checked upload).
+    Sources/PhoneListUI    Store (sync, persistence, conflict handling),
+                           RootView, SectionView, ItemRow, SettingsView,
+                           Keychain, Haptics.
+    Tests/PhoneListCoreTests  Swift Testing suite (20 tests), including a
+                           byte-for-byte round trip of the real
+                           research_TODO.txt.
+    App/                   @main entry; project.yml for xcodegen;
+                           Config.xcconfig for app key / team id.
+* Worked around the CLT lacking XCTest and a broken Testing rpath with
+  test.sh.  Renamed the core Section type to FileSection to avoid a SwiftUI
+  clash.  Fixed first-launch dirty state, path normalisation, empty items.
+* Verified: swift build clean on macOS, 20 core tests pass.
+
+--- Dropbox / Xcode setup (inputs 4-13) ---
+* Explained what a Dropbox "app" is (an OAuth registration, not a program).
+* Walked through: install Xcode, register Dropbox app with
+  files.content.read/write and redirect URI db-<key>://oauth, fill
+  Config.xcconfig, prepare phone, build, trust certificate, link.
+* Wrote the app key into Config.xcconfig.  Team id left for Xcode GUI.
+* After Xcode install: license accepted by Luke; first-launch run by Luke;
+  Claude downloaded the iOS 26.5 platform (8.5 GB).
+* Explained the enki/laptop split: project is in Dropbox, so the laptop
+  deploys to the phone; no handoff file needed.  Noted TestFlight as the
+  cable-free option with a paid account.
+
+--- Simulator verification (same stretch) ---
+* Built for iOS device and simulator (no warnings).  Booted an iPhone 17
+  simulator, installed the app, seeded it with the real research_TODO.txt,
+  screenshotted.
+* Added "remember last section" feature.  Tightened list row insets.
+  Replaced SwiftUI Divider (rendered as a vertical tick in rows) with a
+  1 px rule.
+* Added an XCUITest target (UITests/) driven through DEBUG-only hooks
+  PHONELIST_SEED_TEXT and PHONELIST_DUMP_PATH; 7 tests: render, toggle,
+  swipe-to-~, edit with rewrap, return-key sibling insert, "+" append,
+  keyboard-bar indent with children.
+* Two real bugs found and fixed via those tests: tap-to-edit never focused
+  (FocusState set before the field existed) -> separate editingID state
+  with focus claimed on appear; return key lost the new item (focus-nil
+  event cleared editing) -> only clear when the nil belongs to the editing
+  row.
+
+--- Phone deployment support (inputs 14-17) ---
+* Diagnosed the signing error as "no device connected yet"; walked through
+  selecting the phone and Try Again.
+* Walked through trusting the developer certificate on the phone.
+* Saved a memory note about the enki-builds / laptop-deploys workflow.
+* Explained free vs paid Apple developer account: 7-day expiry vs 1 year,
+  and TestFlight.
+
+--- Fixes from phone feedback (inputs 18-20) ---
+* Cursor/bullet vertical offset on empty items: reproduced in simulator;
+  switched ItemRow to top alignment with the checkbox sized to one body
+  line; added "New item" placeholder.
+* Missing keyboard bar on the phone: replaced the SwiftUI .keyboard toolbar
+  placement with an app-drawn edit bar in RootView's bottom safe-area inset
+  (outdent, indent, new item, won't-do, Done), shown instead of the status
+  line while editing.  Lifted editingID to RootView.
+* Told Luke the Xcode console messages were iOS keyboard-system noise.
+* All 7 UI tests re-run and passing after each change.
+
+--- App icon (inputs 21-22) ---
+* Inspected ~/face.png (380x389, opaque near-black backdrop; hair colour
+  nearly equal to backdrop).
+* First pass kept the dark backdrop; on Luke's mid-task request switched to
+  a white -> pale grey diagonal gradient.  Built a matte by thresholding
+  against the backdrop colour, morphological closing to seal the hair
+  outline, flood-fill from the corners, 1 px erosion to drop the dark
+  fringe, slight blur.  Square crop with the sticker's hard cut on the icon's
+  left edge, framing eyes and mouth.  Upscaled to 1024.
+* Created App/Assets.xcassets/AppIcon.appiconset, set
+  ASSETCATALOG_COMPILER_APPICON_NAME in project.yml, regenerated the project,
+  verified Assets.car and CFBundleIcons in the built bundle.
+* Saved the recipe as App/make_icon.py; noted it in README.
+
+--- Wrap-up (inputs 23-24) ---
+* Confirmed Xcode can be closed after a successful Run; reminded about the
+  7-day expiry and icon-cache reinstall.
+* Wrote this log.
+
+
+==========================================
+PART 3: STATE AT END OF SESSION
+
+* App installed and running on Luke's iPhone, linked to Dropbox, editing
+  ~/Dropbox/research_TODO.txt.  done.txt is never touched.
+* Tests: 20 core (./test.sh), 7 UI (xcodebuild test in simulator), all
+  passing.
+* Not yet exercised end to end: a real merge conflict between laptop and
+  phone edits.
+* Free Apple ID: reinstall from the laptop via Xcode roughly weekly.
+* Files of note: README.md (design constraints, layout, build steps),
+  Config.xcconfig (app key; team chosen in Xcode), App/make_icon.py.

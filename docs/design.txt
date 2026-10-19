@@ -1,0 +1,115 @@
+Design constraints, 2026-10-19.  Written before implementation; still
+accurate except where README.md says otherwise.
+
+==========================================
+DESIGN CONSTRAINTS
+
+Scope
+-----
+
+* v1 edits research_TODO.txt only.  done.txt is never read or written by the
+  app.
+
+  Rationale: moving items to done.txt is a batch "sweep" ritual done on the
+  laptop, not a per-item action.  Date headers in done.txt appear a few times
+  per week, not once per completed item; the F5 timestamp is the sweep time,
+  not the completion time; and sweeps move whole blocks (the most recent
+  done block has "*" children sitting under "-" parents).  So marking an item
+  "-" or "~" on the phone and leaving it in place in research_TODO.txt until
+  the next laptop sweep is exactly consistent with current practice, and
+  loses no timing information.  done.txt is also ~1.1 MB / ~35k lines, so
+  pulling it to the phone on every sync buys nothing and risks a mangled
+  upload.
+
+* A laptop-side "sweep" helper (move "-"/"~" items to done.txt under a date
+  header) is a possible later addition.  Not v1.
+
+Round-trip invariant
+--------------------
+
+* Any line the user did not touch on the phone comes back byte-identical
+  after sync.  This is the single rule that keeps the vim workflow intact.
+
+* Consequence: the app edits a line-level model and only rewrites the lines
+  it touched.  It must never regenerate the whole file from an abstract tree.
+
+File format (as observed in research_TODO.txt, 2018-2026)
+---------------------------------------------------------
+
+* Section header: a line of 42 "=" characters, followed by a title line.
+  Sections are the top-level navigation unit (the mobile analog of the vim
+  shift+* jump).
+
+* Subsection dividers: lines of "-" (typically 10) or "~" (typically 4).
+  Pass through verbatim.
+
+* Item markers, after optional leading whitespace:
+    "*"  to do
+    "-"  done
+    "~"  decided not to do
+  Old files also contain "x"/"X" (2018-era "didn't do").  Treat as "~" for
+  display; never rewrite them.
+
+* Nesting is by indentation.  Two spaces per level is the norm, but a small
+  number of lines use tabs.  Preserve whatever indentation a line already
+  has; new lines use the indentation of their siblings.
+
+* Hard wrapping: items are wrapped at ~80 columns with a hanging indent.  A
+  logical item is a marker line plus all following lines that are indented
+  more deeply than the marker and carry no marker of their own.  The app
+  displays a logical item as one paragraph.
+
+  Decision: text edited or created on the phone is re-wrapped at 80 columns
+  with vim-style hanging indent on save, so the file looks the same whether
+  the line was written in vim or on the phone.
+
+* Notes / free text: not everything is an item.  The OVERVIEW list, URLs,
+  labels like "Light curves:", bracketed asides, and blank lines are plain
+  text.  The parser needs a verbatim pass-through node type for these.  They
+  render as non-interactive text in the app.
+
+* No auto-sort of completed items.  Apple Notes drops checked items to the
+  bottom; in this format position is meaningful and the laptop sweep expects
+  "-" items in place next to their siblings.  Mark in place; do not move.
+
+* Completing a parent does not complete its children.  Each marker is
+  independent.
+
+Sync
+----
+
+* Dropbox API v2: whole-file download on open, whole-file upload on save
+  with mode=update against the last-seen rev.  The file is ~15 KB, so this
+  is trivial and deterministic.
+
+* On rev conflict: do not overwrite.  Re-download, re-apply the phone's
+  line-level edits if they still apply cleanly, otherwise surface the
+  conflict.  Dropbox's own "conflicted copy" behavior is the fallback, never
+  the plan.
+
+* Do not rely on the iOS Files app / Dropbox file provider.  It syncs
+  lazily and gives no rev to check against.
+
+Platform and interaction
+------------------------
+
+* Native iOS (SwiftUI).  Haptics, swipe gestures, and drag reorder all
+  argue against a web wrapper.
+
+* Gesture map (first pass):
+    tap checkbox           toggle "*" <-> "-"
+    tap text               edit the item in place (keyboard comes up)
+    swipe left             mark "~"  (a second, non-full-swipe action deletes)
+    keyboard toolbar       outdent / indent / new item below / mark "~" / done,
+                           in the style of the Apple Notes formatting bar.
+                           The same actions are in the long-press menu.
+    Edit button + drag     reorder within a section (item moves with its
+                           children)
+    section picker         jump between "=====" sections
+    "+" at end of section  new "*" item at that section's base indentation
+
+* Indent and outdent move the item together with its children (everything
+  below it that is indented more deeply, up to the next blank line, divider,
+  header, or shallower item).
+
+* Haptic feedback on toggle, matching the Apple Notes feel.
